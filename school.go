@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -200,6 +202,12 @@ func main() {
 	load(_holidays, &holidays)
 	load(_keyDates, &keyDates)
 
-	fmt.Printf("Starting server on port %d...\n", _port)
-	router(_port)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = strconv.Itoa(_port)
+	}
+
+	fmt.Printf("Starting server on port %s...\n", port)
+	p, _ := strconv.Atoi(port)
+	router(p)
 }
