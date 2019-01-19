@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -36,8 +37,8 @@ func (term Term) getDates(year string) map[string]time.Time {
 	return map[string]time.Time{"start": start, "end": end}
 }
 
-func (holiday KeyDate) getDate(year string) time.Time {
-	date := parseDate(holiday.Date, year)
+func (holiday KeyDate) getDate() time.Time {
+	date := parseDate(holiday.Date, "")
 	return date
 }
 
@@ -45,7 +46,7 @@ func getHolidays(start, end time.Time, year string) []KeyDate {
 	names := make([]KeyDate, 0)
 
 	for _, holiday := range holidays {
-		date := holiday.getDate(year)
+		date := holiday.getDate()
 		if start.Unix() < date.Unix() && date.Unix() < end.Unix() {
 			names = append(names, holiday)
 		}
@@ -57,7 +58,7 @@ func getKeyDates(start, end time.Time, year string) []KeyDate {
 	names := make([]KeyDate, 0)
 
 	for _, keyDate := range keyDates {
-		date := keyDate.getDate(year)
+		date := keyDate.getDate()
 		if start.Unix() < date.Unix() && date.Unix() < end.Unix() {
 			names = append(names, keyDate)
 		}
@@ -80,10 +81,33 @@ func calcDates(term Term, year string) map[string]interface{} {
 		"TotalCalendarDays": totalDays,
 		"SchoolWeeks":       schoolWeeks,
 		"SchoolDays":        schoolWeeks*5 + (firstWeekDays - 2) + lastWeekDays - len(termHolidays),
-		"TermHolidays":      termHolidays,
-		"KeyDates":          getKeyDates(term.getDates(year)["start"], term.getDates(year)["end"], year),
-		"Weekends":          schoolWeeks + 1,
+		//"TermHolidays":      termHolidays,
+		//"KeyDates":          getKeyDates(term.getDates(year)["start"], term.getDates(year)["end"], year),
+		"Weekends": schoolWeeks + 1,
 	}
+}
+
+func sortEvents(events []KeyDate) []KeyDate {
+
+	// keys := make([]int64, 0, len(events))
+	// for _, event := range events {
+	// 	keys = append(keys, time.Time(parseDate(event.Date, "")).Unix())
+	// }
+
+	sort.Slice(events, func(i, j int) bool {
+		date1 := parseDate(events[i].Date, "").Unix()
+		date2 := parseDate(events[j].Date, "").Unix()
+		return date1 < date2
+	})
+
+	return events[func(events []KeyDate) int {
+		for i := range events {
+			if parseDate(events[i].Date, "").Unix() > time.Now().Unix() {
+				return i
+			}
+		}
+		return len(events)
+	}(events):]
 }
 
 func main() {
@@ -114,6 +138,10 @@ func main() {
 	load("holidays.json", &holidays)
 	load("key-dates.json", &keyDates)
 
+	events := make([]KeyDate, 0)
+	events = append(events, holidays...)
+	events = append(events, keyDates...)
+
 	for year := range terms {
 
 		if year != Year {
@@ -121,17 +149,27 @@ func main() {
 		}
 
 		summary["SchoolDaysTotal"] = int(0)
-		summary["Terms"] = make([]map[string]interface{}, 0)
+		summary["SchoolDaysRemaining"] = int(0)
 
 		for i, term := range terms[year] {
 
-			if parseDate(term.Start, year).Unix() < time.Now().Unix() && parseDate(term.End, year).Unix() > time.Now().Unix() {
-				summary["CurrentTerm"] = i
-
-			}
 			this := calcDates(term, year)
 
-			//summary["Terms"] = append(summary["Terms"].([]map[string]interface{}), this)
+			if parseDate(term.Start, year).Unix() < time.Now().Unix() && parseDate(term.End, year).Unix() > time.Now().Unix() {
+				_, month, day := time.Now().Date()
+				start := fmt.Sprintf("%d %s", day, month)
+				this["DaysRemaining"] = calcDates(Term{start, term.End}, year)["SchoolDays"]
+				summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["DaysRemaining"].(int)
+				summary["CurrentTerm"] = i + 1
+				summary["Term"] = this
+			} else {
+				summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["SchoolDays"].(int)
+			}
+
+			//
+
+			events = append(events, KeyDate{fmt.Sprintf("Term %d Starts", i+1), term.Start + " " + year})
+			events = append(events, KeyDate{fmt.Sprintf("Term %d Ends", i+1), term.End + " " + year})
 
 			summary["SchoolDaysTotal"] = summary["SchoolDaysTotal"].(int) + this["SchoolDays"].(int)
 		}
@@ -140,6 +178,8 @@ func main() {
 	if summary["CurrentTerm"] == nil {
 		summary["CurrentTerm"] = "Holidays"
 	}
+
+	summary["Events"] = sortEvents(events)
 
 	if encoded, err := json.MarshalIndent(summary, "", "    "); err == nil {
 		fmt.Printf("%s\n", encoded)
