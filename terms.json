@@ -1,0 +1,38 @@
+{
+    "2019": [
+        {
+            "start": "24 January",
+            "end": "12 April"
+        },
+        {
+            "start": "29 April",
+            "end": "28 June"
+        },
+        {
+            "start": "22 July",
+            "end": "27 September"
+        },
+        {
+            "start": "14 October",
+            "end": "3 December"
+        }
+    ],
+    "2020": [
+        {
+            "start": "28 January",
+            "end": "9 April"
+        },
+        {
+            "start": "28 April",
+            "end": "26 June"
+        },
+        {
+            "start": "20 July",
+            "end": "25 September"
+        },
+        {
+            "start": "12 October",
+            "end": "4 December"
+        }
+    ]
+}

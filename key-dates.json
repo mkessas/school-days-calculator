@@ -1,0 +1,167 @@
+[
+    {
+        "name": "Meet the teacher",
+        "division": "Primary",
+        "date": "31 January"
+    },
+    {
+        "name": "Whole School Atheletics Day",
+        "division": "Both",
+        "date": "26 February"
+    },
+    {
+        "name": "Open Day",
+        "division": "Both",
+        "date": "2 March"
+    },
+    {
+        "name": "Parents and Friends Picnic",
+        "division": "Both",
+        "date": "8 March"
+    },
+    {
+        "name": "Parent Teacher Interviews",
+        "division": "Both",
+        "date": "12 March"
+    },
+    {
+        "name": "Year 5 Camp",
+        "division": "Primary",
+        "date": "3 April"
+    },
+    {
+        "name": "ANZAC Assembly",
+        "division": "Both",
+        "date": "29 April"
+    },
+    {
+        "name": "Book Week",
+        "division": "Primary",
+        "date": "6 May"
+    },
+    {
+        "name": "Internal Examinations",
+        "division": "Both",
+        "date": "22 May"
+    },
+    {
+        "name": "Grandparents Day",
+        "division": "Primary",
+        "date": "31 May"
+    },
+    {
+        "name": "Whole School Cross Country",
+        "division": "Both",
+        "date": "5 June"
+    },
+    {
+        "name": "Open Afternoon",
+        "division": "Both",
+        "date": "8 June"
+    },
+    {
+        "name": "Swimming Carnival",
+        "division": "Primary",
+        "date": "13 June"
+    },
+    {
+        "name": "Parents and Friends Hotdog Day",
+        "division": "Both",
+        "date": "19 June"
+    },
+    {
+        "name": "Open Evening",
+        "division": "Both",
+        "date": "25 July"
+    },
+    {
+        "name": "Parent Teacher Interviews",
+        "division": "Both",
+        "date": "30 July"
+    },
+    {
+        "name": "Parents and Friends Cupcake Day",
+        "division": "Primary",
+        "date": "21 September"
+    },
+    {
+        "name": "Year 6 Checkpoint Exams",
+        "division": "Primary",
+        "date": "16 October"
+    },
+    {
+        "name": "Junior Examinations",
+        "division": "Both",
+        "date": "29 October"
+    },
+    {
+        "name": "Year 6 Graduation",
+        "division": "Primary",
+        "date": "14 November"
+    },
+    {
+        "name": "Orientation Day",
+        "division": "Both",
+        "date": "19 November"
+    },
+    {
+        "name": "Whole School Picnic",
+        "division": "Both",
+        "date": "29 November"
+    },
+    {
+        "name": "Prize Giving",
+        "division": "Both",
+        "date": "3 December"
+    },
+    {
+        "name": "Meet the teacher",
+        "division": "College",
+        "date": "30 January"
+    },
+    {
+        "name": "College Swimming Sports",
+        "division": "College",
+        "date": "14 February"
+    },
+    {
+        "name": "Sunderland Day",
+        "division": "College",
+        "date": "4 June"
+    },
+    {
+        "name": "Battle of the Bands",
+        "division": "College",
+        "date": "29 June"
+    },
+    {
+        "name": "Careers and Options Evening",
+        "division": "College",
+        "date": "15 August"
+    },
+    {
+        "name": "Open Day",
+        "division": "College",
+        "date": "21 September"
+    },
+    {
+        "name": "Cambridge Examinations",
+        "division": "College",
+        "date": "14 October"
+    },
+    {
+        "name": "Year 9 Checkpoint Examinations",
+        "division": "College",
+        "date": "16 October"
+    },
+    {
+        "name": "Transition Evening",
+        "division": "College",
+        "date": "7 November"
+    },
+    {
+        "name": "Year 7-11 Camps",
+        "division": "College",
+        "date": "25 November"
+    }
+]
