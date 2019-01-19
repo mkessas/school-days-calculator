@@ -1,0 +1,25 @@
+{
+	"heroku": {
+		"goVersion": "go1.10",
+		"install": [
+			"."
+		]
+	},
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"origin": "github.com/gorilla/mux/vendor/github.com/gorilla/context",
+			"path": "github.com/gorilla/context",
+			"revision": "85e6bfff1ae85ae9c2db46ea91ce093c0abca066",
+			"revisionTime": "2018-01-17T01:18:53Z"
+		},
+		{
+			"checksumSHA1": "pukmBt9ap3Yft2KgiPck9KQeg4g=",
+			"path": "github.com/gorilla/mux",
+			"revision": "85e6bfff1ae85ae9c2db46ea91ce093c0abca066",
+			"revisionTime": "2018-01-17T01:18:53Z"
+		}
+	],
+	"rootPath": "school-days"
+}
