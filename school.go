@@ -4,17 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"sort"
-	"strconv"
 	"time"
 )
 
+const _terms = "data/terms.json"
+const _holidays = "data/holidays.json"
+const _keyDates = "data/key-dates.json"
+const _port = 8080
+
+// Term is a struct representing a school term
 type Term struct {
 	Start string `json:"start"`
 	End   string `json:"end"`
 }
 
+// KeyDate is a generic school important date or public holiday
 type KeyDate struct {
 	Name string `json:"name"`
 	Date string `json:"date"`
@@ -110,16 +115,73 @@ func sortEvents(events []KeyDate) []KeyDate {
 	}(events):]
 }
 
+func getEvents() []KeyDate {
+
+	events := make([]KeyDate, 0)
+	events = append(events, holidays...)
+	events = append(events, keyDates...)
+
+	for year := range terms {
+		for i, term := range terms[year] {
+			events = append(events, KeyDate{fmt.Sprintf("Term %d Starts", i+1), term.Start + " " + year})
+			events = append(events, KeyDate{fmt.Sprintf("Term %d Ends", i+1), term.End + " " + year})
+		}
+	}
+
+	return sortEvents(events)
+}
+
+func getTerms(year string) []map[string]interface{} {
+
+	ret := make([]map[string]interface{}, 0)
+
+	for _, term := range terms[year] {
+		ret = append(ret, calcDates(term, year))
+	}
+
+	return ret
+}
+
+func school(year string) map[string]interface{} {
+
+	summary := make(map[string]interface{}, 0)
+
+	summary["SchoolDaysTotal"] = int(0)
+	summary["SchoolDaysRemaining"] = int(0)
+
+	for i, term := range terms[year] {
+
+		this := calcDates(term, year)
+
+		if parseDate(term.Start, year).Unix() < time.Now().Unix() && parseDate(term.End, year).Unix() > time.Now().Unix() {
+			_, month, day := time.Now().Date()
+			start := fmt.Sprintf("%d %s", day, month)
+			this["DaysRemaining"] = calcDates(Term{start, term.End}, year)["SchoolDays"]
+			summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["DaysRemaining"].(int)
+			summary["CurrentTerm"] = i + 1
+			summary["Term"] = this
+		} else {
+			summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["SchoolDays"].(int)
+		}
+
+		summary["SchoolDaysTotal"] = summary["SchoolDaysTotal"].(int) + this["SchoolDays"].(int)
+	}
+
+	if summary["CurrentTerm"] == nil {
+		summary["CurrentTerm"] = "Holidays"
+	}
+
+	//summary["Events"] = sortEvents(events)
+
+	return summary
+
+}
+
 func main() {
+
 	terms = make(map[string][]Term, 0)
 	holidays = make([]KeyDate, 0)
 	keyDates = make([]KeyDate, 0)
-	summary := make(map[string]interface{}, 0)
-	Year := strconv.Itoa(time.Now().Year())
-
-	if len(os.Args) > 1 {
-		Year = os.Args[1]
-	}
 
 	defer func() {
 		if e := recover(); e != nil {
@@ -134,57 +196,10 @@ func main() {
 		}
 	}
 
-	load("terms.json", &terms)
-	load("holidays.json", &holidays)
-	load("key-dates.json", &keyDates)
+	load(_terms, &terms)
+	load(_holidays, &holidays)
+	load(_keyDates, &keyDates)
 
-	events := make([]KeyDate, 0)
-	events = append(events, holidays...)
-	events = append(events, keyDates...)
-
-	for year := range terms {
-
-		if year != Year {
-			continue
-		}
-
-		summary["SchoolDaysTotal"] = int(0)
-		summary["SchoolDaysRemaining"] = int(0)
-
-		for i, term := range terms[year] {
-
-			this := calcDates(term, year)
-
-			if parseDate(term.Start, year).Unix() < time.Now().Unix() && parseDate(term.End, year).Unix() > time.Now().Unix() {
-				_, month, day := time.Now().Date()
-				start := fmt.Sprintf("%d %s", day, month)
-				this["DaysRemaining"] = calcDates(Term{start, term.End}, year)["SchoolDays"]
-				summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["DaysRemaining"].(int)
-				summary["CurrentTerm"] = i + 1
-				summary["Term"] = this
-			} else {
-				summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["SchoolDays"].(int)
-			}
-
-			//
-
-			events = append(events, KeyDate{fmt.Sprintf("Term %d Starts", i+1), term.Start + " " + year})
-			events = append(events, KeyDate{fmt.Sprintf("Term %d Ends", i+1), term.End + " " + year})
-
-			summary["SchoolDaysTotal"] = summary["SchoolDaysTotal"].(int) + this["SchoolDays"].(int)
-		}
-	}
-
-	if summary["CurrentTerm"] == nil {
-		summary["CurrentTerm"] = "Holidays"
-	}
-
-	summary["Events"] = sortEvents(events)
-
-	if encoded, err := json.MarshalIndent(summary, "", "    "); err == nil {
-		fmt.Printf("%s\n", encoded)
-	} else {
-		panic(err.Error())
-	}
-
+	fmt.Printf("Starting server on port %d...\n", _port)
+	router(_port)
 }
