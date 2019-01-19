@@ -15,9 +15,8 @@ type Term struct {
 }
 
 type KeyDate struct {
-	Name     string `json:"name"`
-	Date     string `json:"date"`
-	Division string `json:"division"`
+	Name string `json:"name"`
+	Date string `json:"date"`
 }
 
 var terms map[string][]Term
@@ -124,17 +123,22 @@ func main() {
 		summary["SchoolDaysTotal"] = int(0)
 		summary["Terms"] = make([]map[string]interface{}, 0)
 
-		for _, term := range terms[year] {
+		for i, term := range terms[year] {
 
-			if parseDate(term.Start, year).Unix() < time.Now().Unix() {
-				continue
+			if parseDate(term.Start, year).Unix() < time.Now().Unix() && parseDate(term.End, year).Unix() > time.Now().Unix() {
+				summary["CurrentTerm"] = i
+
 			}
-
 			this := calcDates(term, year)
 
-			summary["Terms"] = append(summary["Terms"].([]map[string]interface{}), this)
+			//summary["Terms"] = append(summary["Terms"].([]map[string]interface{}), this)
+
 			summary["SchoolDaysTotal"] = summary["SchoolDaysTotal"].(int) + this["SchoolDays"].(int)
 		}
+	}
+
+	if summary["CurrentTerm"] == nil {
+		summary["CurrentTerm"] = "Holidays"
 	}
 
 	if encoded, err := json.MarshalIndent(summary, "", "    "); err == nil {
