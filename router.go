@@ -61,7 +61,7 @@ func router(port int) {
 
 				year := mux.Vars(r)["year"]
 
-				summary := school(year)
+				summary := getSummary(year)
 
 				successResponse(w, summary, 200)
 

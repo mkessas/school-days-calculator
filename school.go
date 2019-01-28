@@ -1,12 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"sort"
-	"strconv"
 	"time"
 )
 
@@ -29,13 +25,21 @@ type KeyDate struct {
 
 var terms map[string][]Term
 var holidays, keyDates []KeyDate
+var timezone *time.Location
 
 func parseDate(date string, year string) time.Time {
-	ret, err := time.Parse("2 January 2006 MST", date+" "+year+" NZT")
+	format := "2 January 2006"
+	str := date
+
+	if year != "" {
+		str = str + " " + year
+	}
+
+	ret, err := time.Parse(format, str)
 	if err != nil {
 		panic(err.Error())
 	}
-	return ret
+	return ret.Local()
 }
 
 func (term Term) getDates(year string) map[string]time.Time {
@@ -53,8 +57,8 @@ func getHolidays(start, end time.Time, year string) []KeyDate {
 	names := make([]KeyDate, 0)
 
 	for _, holiday := range holidays {
-		date := holiday.getDate()
-		if start.Unix() < date.Unix() && date.Unix() < end.Unix() {
+		date := holiday.getDate().Add(time.Hour * 24)
+		if start.Before(date) && date.Before(end) {
 			names = append(names, holiday)
 		}
 	}
@@ -66,20 +70,41 @@ func getKeyDates(start, end time.Time, year string) []KeyDate {
 
 	for _, keyDate := range keyDates {
 		date := keyDate.getDate()
-		if start.Unix() < date.Unix() && date.Unix() < end.Unix() {
+		if start.Before(date) && date.Before(end) {
 			names = append(names, keyDate)
 		}
 	}
 	return names
 }
 
+func getWeekday(date time.Time) int {
+	val := int(date.Weekday())
+	if val == 0 {
+		return 6
+	}
+	return val - 1
+}
+
 func calcDates(term Term, year string) map[string]interface{} {
 
-	firstWeekDays := 8 - int(term.getDates(year)["start"].Weekday())
-	lastWeekDays := int(term.getDates(year)["end"].Weekday())
+	firstWeekDays := 6 - getWeekday(term.getDates(year)["start"]) - 1
+	if firstWeekDays < 0 {
+		firstWeekDays = 0
+	}
+	lastWeekDays := getWeekday(term.getDates(year)["end"]) + 1
 	totalDays := int(term.getDates(year)["end"].Sub(term.getDates(year)["start"]).Hours()/24) + 1
 	schoolWeeks := (totalDays - firstWeekDays - lastWeekDays) / 7
 	termHolidays := getHolidays(term.getDates(year)["start"], term.getDates(year)["end"], year)
+
+	// fmt.Printf("%s -> %s\n%s %d\n%s %d\n%s %d\n%s %d\n%s %d\n%s %d\n\n",
+	// 	term.Start, term.End,
+	// 	"firstWeekDays", firstWeekDays,
+	// 	"totalDays", totalDays,
+	// 	"schoolWeeks", schoolWeeks,
+	// 	"lastWeekDays", lastWeekDays,
+	// 	"termHolidays", len(termHolidays),
+	// 	"schoolDays", (schoolWeeks*5 + firstWeekDays + lastWeekDays - len(termHolidays)),
+	// )
 
 	return map[string]interface{}{
 		"SchoolYear":        year,
@@ -87,7 +112,7 @@ func calcDates(term Term, year string) map[string]interface{} {
 		"EndDate":           term.End,
 		"TotalCalendarDays": totalDays,
 		"SchoolWeeks":       schoolWeeks,
-		"SchoolDays":        schoolWeeks*5 + (firstWeekDays - 2) + lastWeekDays - len(termHolidays),
+		"SchoolDays":        schoolWeeks*5 + firstWeekDays + lastWeekDays - len(termHolidays),
 		//"TermHolidays":      termHolidays,
 		//"KeyDates":          getKeyDates(term.getDates(year)["start"], term.getDates(year)["end"], year),
 		"Weekends": schoolWeeks + 1,
@@ -96,20 +121,15 @@ func calcDates(term Term, year string) map[string]interface{} {
 
 func sortEvents(events []KeyDate) []KeyDate {
 
-	// keys := make([]int64, 0, len(events))
-	// for _, event := range events {
-	// 	keys = append(keys, time.Time(parseDate(event.Date, "")).Unix())
-	// }
-
 	sort.Slice(events, func(i, j int) bool {
-		date1 := parseDate(events[i].Date, "").Unix()
-		date2 := parseDate(events[j].Date, "").Unix()
-		return date1 < date2
+		date1 := parseDate(events[i].Date, "")
+		date2 := parseDate(events[j].Date, "")
+		return date1.Before(date2)
 	})
 
 	return events[func(events []KeyDate) int {
 		for i := range events {
-			if parseDate(events[i].Date, "").Unix() > time.Now().Unix() {
+			if parseDate(events[i].Date, "").Add(time.Hour * 24).After(time.Now()) {
 				return i
 			}
 		}
@@ -144,7 +164,7 @@ func getTerms(year string) []map[string]interface{} {
 	return ret
 }
 
-func school(year string) map[string]interface{} {
+func getSummary(year string) map[string]interface{} {
 
 	summary := make(map[string]interface{}, 0)
 
@@ -155,10 +175,10 @@ func school(year string) map[string]interface{} {
 
 		this := calcDates(term, year)
 
-		if parseDate(term.Start, year).Unix() < time.Now().Unix() && parseDate(term.End, year).Unix() > time.Now().Unix() {
+		if parseDate(term.Start, year).Before(time.Now()) && parseDate(term.End, year).After(time.Now()) {
 			_, month, day := time.Now().Date()
-			start := fmt.Sprintf("%d %s", day, month)
-			this["DaysRemaining"] = calcDates(Term{start, term.End}, year)["SchoolDays"]
+			today := fmt.Sprintf("%d %s", day, month)
+			this["DaysRemaining"] = calcDates(Term{today, term.End}, year)["SchoolDays"].(int)
 			summary["SchoolDaysRemaining"] = summary["SchoolDaysRemaining"].(int) + this["DaysRemaining"].(int)
 			summary["CurrentTerm"] = i + 1
 			summary["Term"] = this
@@ -177,37 +197,4 @@ func school(year string) map[string]interface{} {
 
 	return summary
 
-}
-
-func main() {
-
-	terms = make(map[string][]Term, 0)
-	holidays = make([]KeyDate, 0)
-	keyDates = make([]KeyDate, 0)
-
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Printf("ERROR: %s\n", e)
-		}
-	}()
-
-	load := func(filename string, data interface{}) {
-		raw, _ := ioutil.ReadFile(filename)
-		if err := json.Unmarshal(raw, &data); err != nil {
-			panic(err)
-		}
-	}
-
-	load(_terms, &terms)
-	load(_holidays, &holidays)
-	load(_keyDates, &keyDates)
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = strconv.Itoa(_port)
-	}
-
-	fmt.Printf("Starting server on port %s...\n", port)
-	p, _ := strconv.Atoi(port)
-	router(p)
 }
